@@ -24,10 +24,15 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
 
       - name: Install Android SDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -244,7 +249,6 @@ jobs:
               y = (size - logo.height) // 2
 
               image.alpha_composite(logo, (x, y))
-
               image.save(output_dir / "ic_launcher.png")
 
           print("Assignment Earn original logo icons generated!")
