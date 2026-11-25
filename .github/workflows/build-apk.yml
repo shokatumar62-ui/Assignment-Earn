@@ -24,7 +24,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
@@ -195,10 +195,11 @@ jobs:
           EOF
 
       - name: Build APK
-        run: gradle assembleDebug
+        run: gradle --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Assignment-Earn-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
