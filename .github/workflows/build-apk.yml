@@ -24,7 +24,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@v3
 
       - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
@@ -84,18 +84,25 @@ jobs:
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
               <uses-permission android:name="android.permission.INTERNET"/>
+
               <application
                   android:label="Assignment Earn"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher"
                   android:theme="@android:style/Theme.Material.Light.NoActionBar"
                   android:usesCleartextTraffic="false">
+
                   <activity
                       android:name=".MainActivity"
                       android:exported="true">
+
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN"/>
                           <category android:name="android.intent.category.LAUNCHER"/>
                       </intent-filter>
+
                   </activity>
               </application>
           </manifest>
@@ -115,6 +122,7 @@ jobs:
           import android.net.Uri;
 
           public class MainActivity extends Activity {
+
               WebView webView;
 
               @Override
@@ -133,6 +141,7 @@ jobs:
                   webView.setWebChromeClient(new WebChromeClient());
 
                   webView.setWebViewClient(new WebViewClient() {
+
                       @Override
                       public boolean shouldOverrideUrlLoading(
                           WebView view, WebResourceRequest request) {
@@ -194,12 +203,58 @@ jobs:
           }
           EOF
 
+      - name: Generate Original App Logo Icons
+        run: |
+          python -m pip install pillow
+
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+
+          source = Path("assignment-earn-app-icon.png")
+
+          if not source.exists():
+              raise FileNotFoundError(
+                  "assignment-earn-app-icon.png missing from repository root"
+              )
+
+          original = Image.open(source).convert("RGBA")
+
+          sizes = {
+              "mipmap-mdpi": 48,
+              "mipmap-hdpi": 72,
+              "mipmap-xhdpi": 96,
+              "mipmap-xxhdpi": 144,
+              "mipmap-xxxhdpi": 192
+          }
+
+          for folder, size in sizes.items():
+              output_dir = Path("app/src/main/res") / folder
+              output_dir.mkdir(parents=True, exist_ok=True)
+
+              image = Image.new("RGBA", (size, size), (0, 0, 0, 255))
+
+              logo = original.copy()
+              logo.thumbnail(
+                  (int(size * 0.90), int(size * 0.90)),
+                  Image.Resampling.LANCZOS
+              )
+
+              x = (size - logo.width) // 2
+              y = (size - logo.height) // 2
+
+              image.alpha_composite(logo, (x, y))
+
+              image.save(output_dir / "ic_launcher.png")
+
+          print("Assignment Earn original logo icons generated!")
+          PY
+
       - name: Build APK
-        run: gradle --no-daemon assembleDebug
+        run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Assignment-Earn-APK
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
